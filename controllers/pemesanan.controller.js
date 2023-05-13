@@ -35,7 +35,6 @@ exports.findPemesanan = async (request, response) => {
     let pemesanan = await pemesananModel.findAll({
         where: {
             [Op.or]: [
-                {id_pemesanan: {[Op.substring]: keyword}},
                 {nomor_pemesanan: {[Op.substring]: keyword}},
                 {nama_pemesan: {[Op.substring]: keyword}},
                 {email_pemesan: {[Op.substring]: keyword}},
@@ -46,14 +45,14 @@ exports.findPemesanan = async (request, response) => {
                 {jumlah_kamar: {[Op.substring]: keyword}},
                 {id_tipe_kamar: {[Op.substring]: keyword}},
                 {status_pemesanan: {[Op.substring]: keyword}},
-                {id_user: {[Op.substring]: keyword}},
+                {id_user: {[Op.substring]: keyword}}
             ]
         }
     })
     return response.json({
         success: true,
         data: pemesanan,
-        message: `All pemesanan have been loaded`
+        message: `pemesanan have been loaded`
     })
 }
 
@@ -95,10 +94,8 @@ exports.addPemesanan = async (request, response) => {
     }
 };
 
-  
-
 exports.updatePemesanan = async (request, response) => {
-    let newData = {
+    let dataPemesanan = {
         nomor_pemesanan : request.body.nomor_pemesanan,
         nama_pemesan : request.body.nama_pemesanan,
         email_pemesan : request.body.email_pemesanan,
@@ -111,29 +108,12 @@ exports.updatePemesanan = async (request, response) => {
         status_pemesanan : request.body.status_pemesanan,
         id_user : request.body.id_user
     }
-
     let pemesananID = request.params.id
-    pemesananModel.update(newData, {where: {id: pemesananID}})
-    .then(async result => {
-        await detailsOfPemesananModel.destroy(
-            {where: {pemesananID: pemesananID}}
-        )
-        let detailsOfPemesanan = request.body.detail_pemesanan
-        for (let i=0; i<detailsOfPemesanan.length; i++){
-            detailsOfPemesanan[i].pemesananID = pemesananID
-        }
-        detailsOfPemesananModel.bulkCreate(detailsOfPemesanan)
-        .then(result => {
-            return response.json({
-                success: true,
-                message: `pemesanan has updated`
-            })
-        })
-        .catch(error => {
-            return response.json({
-                success: false,
-                message: error.message
-            })
+    pemesananModel.update(dataPemesanan, {where: {id:pemesananID}})
+    .then(result => {
+        return response.json({
+            success: true,
+            message: `Data pemesanan has been updated`
         })
     })
     .catch(error => {
@@ -143,6 +123,53 @@ exports.updatePemesanan = async (request, response) => {
         })
     })
 }
+
+// exports.updatePemesanan = async (request, response) => {
+//     let newData = {
+//         nomor_pemesanan : request.body.nomor_pemesanan,
+//         nama_pemesan : request.body.nama_pemesanan,
+//         email_pemesan : request.body.email_pemesanan,
+//         tgl_pemesanan : request.body.tgl_pemesanan,
+//         tgl_check_in : request.body.tgl_check_in,
+//         tgl_check_out : request.body.tgl_check_out,
+//         nama_tamu : request.body.nama_tamu,
+//         jumlah_kamar : request.body.jumlah_kamar,
+//         id_tipe_kamar : request.body.id_tipe_kamar,
+//         status_pemesanan : request.body.status_pemesanan,
+//         id_user : request.body.id_user
+//     }
+
+//     let pemesananID = request.params.id
+//     pemesananModel.update(newData, {where: {id: pemesananID}})
+//     .then(async result => {
+//         await detailsOfPemesananModel.destroy(
+//             {where: {id: id}}
+//         )
+//         let detailsOfPemesanan = request.body.detail_pemesanan
+//         for (let i=0; i<detailsOfPemesanan.length; i++){
+//             detailsOfPemesanan[i].pemesananID = pemesananID
+//         }
+//         detailsOfPemesananModel.bulkCreate(detailsOfPemesanan)
+//         .then(result => {
+//             return response.json({
+//                 success: true,
+//                 message: `pemesanan has updated`
+//             })
+//         })
+//         .catch(error => {
+//             return response.json({
+//                 success: false,
+//                 message: error.message
+//             })
+//         })
+//     })
+//     .catch(error => {
+//         return response.json({
+//             success: false,
+//             message: error.message
+//         })
+//     })
+// }
 
 exports.deletePemesanan = async (request, response) => {
     let pemesananID = request.params.id

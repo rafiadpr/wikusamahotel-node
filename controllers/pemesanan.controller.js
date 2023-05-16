@@ -3,6 +3,59 @@ const pemesananModel = require(`../models/index`).pemesanan
 const detailsOfPemesananModel = require(`../models/index`).detail_pemesanan
 // const memberModel = require(`../models/index`).member
 const Op = require(`sequelize`).Op
+// const crypto = require("crypto");
+
+// Fungsi untuk menghasilkan nomor acak dengan panjang n
+function generateRandomNumber(n) {
+    let randomNumber = ""
+    for (let i = 0; i < n; i++) {
+      randomNumber += Math.floor(Math.random() * 10)
+    }
+    return randomNumber
+  }
+  
+  // Fungsi untuk memeriksa apakah nomor pemesanan sudah ada di database atau belum
+  async function isDuplicateBookingNumber(bookingNumber) {
+    const result = await pemesananModel.findOne({ where: { nomor_pemesanan: bookingNumber } })
+    return !!result
+  }
+  
+  // Fungsi untuk menghasilkan nomor pemesanan yang belum digunakan sebelumnya
+  async function generateUniqueBookingNumber() {
+    let bookingNumber = generateRandomNumber(6) // Menghasilkan nomor acak dengan 6 digit
+    while (await isDuplicateBookingNumber(bookingNumber)) {
+      // Jika nomor pemesanan sudah ada di database, menghasilkan nomor acak baru
+      bookingNumber = generateRandomNumber(6)
+    }
+    return bookingNumber
+  }
+
+  // untuk find available room
+  async function findAvailableRooms(checkInDate, checkOutDate) {
+    try {
+      const availableRooms = await Kamar.findAll({
+        where: {
+          [Op.or]: [
+            {
+              [Op.and]: [
+                { tgl_check_in: { [Op.gte]: checkInDate } },
+                { tgl_check_in: { [Op.lt]: checkOutDate } },
+              ],
+            },
+            {
+              [Op.and]: [
+                { tgl_check_out: { [Op.gt]: checkInDate } },
+                { tgl_check_out: { [Op.lte]: checkOutDate } },
+              ],
+            },
+          ],
+        },
+      });
+      return availableRooms;
+    } catch (error) {
+      throw new Error('Failed to find available rooms.');
+    }
+  }
 
 exports.getAllPemesanan = async (request, response) => {
     let pemesanan = await pemesananModel.findAll()
@@ -27,6 +80,28 @@ exports.getPemesanan = async (request, response) => {
         success: true,
         data: pemesanan,
         message: `pemesanan loaded`
+    })
+}
+
+exports.getPemesanan = async (request, response) => {
+    let data = await pemesananModel.findAll(
+        {
+            include: [
+                'resepsionis',
+                'admin',
+                {
+                    model: detailsOfPemesananModel,
+                    as: `detail_pemesanan`,
+                    include: ["pemesanan"]
+                }
+            ]
+        }
+    )
+    
+    return response.json({
+        success: true,
+        data: data,
+        message: `all pemesanan have been loaded`
     })
 }
 
@@ -57,8 +132,9 @@ exports.findPemesanan = async (request, response) => {
 }
 
 exports.addPemesanan = async (request, response) => {
+    const nomorPemesanan = await generateUniqueBookingNumber()
     const newPemesanan = {
-        nomor_pemesanan: request.body.nomor_pemesanan,
+        nomor_pemesanan: nomorPemesanan,
         nama_pemesan: request.body.nama_pemesan,
         email_pemesan: request.body.email_pemesan,
         tgl_pemesanan: Date.now(),
@@ -95,8 +171,9 @@ exports.addPemesanan = async (request, response) => {
 };
 
 exports.updatePemesanan = async (request, response) => {
+    const nomorPemesanan = await generateUniqueBookingNumber()
     let dataPemesanan = {
-        nomor_pemesanan : request.body.nomor_pemesanan,
+        nomor_pemesanan: nomorPemesanan,
         nama_pemesan : request.body.nama_pemesanan,
         email_pemesan : request.body.email_pemesanan,
         tgl_pemesanan : request.body.tgl_pemesanan,
@@ -124,53 +201,6 @@ exports.updatePemesanan = async (request, response) => {
     })
 }
 
-// exports.updatePemesanan = async (request, response) => {
-//     let newData = {
-//         nomor_pemesanan : request.body.nomor_pemesanan,
-//         nama_pemesan : request.body.nama_pemesanan,
-//         email_pemesan : request.body.email_pemesanan,
-//         tgl_pemesanan : request.body.tgl_pemesanan,
-//         tgl_check_in : request.body.tgl_check_in,
-//         tgl_check_out : request.body.tgl_check_out,
-//         nama_tamu : request.body.nama_tamu,
-//         jumlah_kamar : request.body.jumlah_kamar,
-//         id_tipe_kamar : request.body.id_tipe_kamar,
-//         status_pemesanan : request.body.status_pemesanan,
-//         id_user : request.body.id_user
-//     }
-
-//     let pemesananID = request.params.id
-//     pemesananModel.update(newData, {where: {id: pemesananID}})
-//     .then(async result => {
-//         await detailsOfPemesananModel.destroy(
-//             {where: {id: id}}
-//         )
-//         let detailsOfPemesanan = request.body.detail_pemesanan
-//         for (let i=0; i<detailsOfPemesanan.length; i++){
-//             detailsOfPemesanan[i].pemesananID = pemesananID
-//         }
-//         detailsOfPemesananModel.bulkCreate(detailsOfPemesanan)
-//         .then(result => {
-//             return response.json({
-//                 success: true,
-//                 message: `pemesanan has updated`
-//             })
-//         })
-//         .catch(error => {
-//             return response.json({
-//                 success: false,
-//                 message: error.message
-//             })
-//         })
-//     })
-//     .catch(error => {
-//         return response.json({
-//             success: false,
-//             message: error.message
-//         })
-//     })
-// }
-
 exports.deletePemesanan = async (request, response) => {
     let pemesananID = request.params.id
 
@@ -197,28 +227,6 @@ exports.deletePemesanan = async (request, response) => {
             success: false,
             message: error.message
         })
-    })
-}
-
-exports.getPemesanan = async (request, response) => {
-    let data = await pemesananModel.findAll(
-        {
-            include: [
-                'resepsionis',
-                'admin',
-                {
-                    model: detailsOfPemesananModel,
-                    as: `detail_pemesanan`,
-                    include: ["pemesanan"]
-                }
-            ]
-        }
-    )
-    
-    return response.json({
-        success: true,
-        data: data,
-        message: `all pemesanan have been loaded`
     })
 }
 

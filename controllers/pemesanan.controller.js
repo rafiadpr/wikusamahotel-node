@@ -134,22 +134,47 @@ exports.findPemesanan = async (request, response) => {
 }
 
 exports.addPemesanan = async (request, response) => {
-    const nomorPemesanan = await generateUniqueBookingNumber()
-    const newPemesanan = {
-        nomor_pemesanan: nomorPemesanan,
-        nama_pemesan: request.body.nama_pemesan,
-        email_pemesan: request.body.email_pemesan,
-        tgl_pemesanan: Date.now(),
-        tgl_check_in: request.body.tgl_check_in,
-        tgl_check_out: request.body.tgl_check_out,
-        nama_tamu: request.body.nama_tamu,
-        jumlah_kamar: request.body.jumlah_kamar,
-        id_tipe_kamar: request.body.id_tipe_kamar,
-        status_pemesanan: 'baru',
-        id_user: request.body.id_user
-    };
+    const today = new Date();
+    const time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    const nomorPemesanan = await generateUniqueBookingNumber();
+
+    // Tanggal check-in yang dimasukkan oleh pengguna
+    const tglCheckIn = new Date(request.body.tgl_check_in);
+    tglCheckIn.setHours(12, 0, 0); // Set jam 12:00:00
+
+    // Tanggal check-out yang dimasukkan oleh pengguna
+    const tglCheckOut = new Date(request.body.tgl_check_out);
+    tglCheckOut.setHours(12, 0, 0); // Set jam 12:00:00
 
     try {
+        // Periksa apakah ada pemesanan dengan tanggal check-in yang sama
+        const existingPemesanan = await pemesananModel.findOne({
+            where: {
+                tgl_check_in: tglCheckIn
+            }
+        });
+
+        if (existingPemesanan) {
+            return response.json({
+                success: false,
+                message: "Pemesanan pada tanggal tersebut sudah ada."
+            });
+        }
+
+        const newPemesanan = {
+            nomor_pemesanan: nomorPemesanan,
+            nama_pemesan: request.body.nama_pemesan,
+            email_pemesan: request.body.email_pemesan,
+            tgl_pemesanan: time,
+            tgl_check_in: tglCheckIn,
+            tgl_check_out: tglCheckOut,
+            nama_tamu: request.body.nama_tamu,
+            jumlah_kamar: request.body.jumlah_kamar,
+            id_tipe_kamar: request.body.id_tipe_kamar,
+            status_pemesanan: 'baru',
+            id_user: request.body.id_user
+        };
+
         const pemesanan = await pemesananModel.create(newPemesanan);
         const pemesananID = pemesanan.id;
         const detailsOfPemesanan = request.body.detail_pemesanan.map(detail => ({

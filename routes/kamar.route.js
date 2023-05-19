@@ -7,6 +7,7 @@ const kamarController = require(`../controllers/kamar.controller`)
 // let {validateAdmin} = require(`../middlewares/admin-validation`)
 
 app.get("/", kamarController.getAllKamar)
+// app.get("/check", kamarController.checkKamar)
 app.post("/", kamarController.addKamar)
 app.post("/find", kamarController.findKamar)
 app.put("/:id", kamarController.updateKamar)

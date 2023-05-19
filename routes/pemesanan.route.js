@@ -7,6 +7,7 @@ const pemesananController = require(`../controllers/pemesanan.controller`)
 // let {validateAdmin} = require(`../middlewares/admin-validation`)
 
 app.get("/", pemesananController.getAllPemesanan)
+app.post("/check", pemesananController.getCheck)
 app.get("/:id", pemesananController.getPemesanan)
 app.post("/", pemesananController.addPemesanan)
 app.post("/find", pemesananController.findPemesanan)

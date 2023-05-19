@@ -1,4 +1,5 @@
 const { where } = require("sequelize")
+const kamarModel = require(`../models/index`).kamar
 const pemesananModel = require(`../models/index`).pemesanan
 const detailsOfPemesananModel = require(`../models/index`).detail_pemesanan
 // const memberModel = require(`../models/index`).member
@@ -30,32 +31,33 @@ function generateRandomNumber(n) {
     return bookingNumber
   }
 
-  // untuk find available room
-  async function findAvailableRooms(checkInDate, checkOutDate) {
+exports.getCheck = async (req, res) => {
+    const { tgl_check_in, tgl_check_out } = req.body;
     try {
-      const availableRooms = await Kamar.findAll({
+      const availableRooms = await pemesananModel.findAll({
         where: {
           [Op.or]: [
             {
-              [Op.and]: [
-                { tgl_check_in: { [Op.gte]: checkInDate } },
-                { tgl_check_in: { [Op.lt]: checkOutDate } },
-              ],
-            },
-            {
-              [Op.and]: [
-                { tgl_check_out: { [Op.gt]: checkInDate } },
-                { tgl_check_out: { [Op.lte]: checkOutDate } },
-              ],
+              tgl_check_in: {
+                [Op.gte]: tgl_check_in,
+              },
+              tgl_check_out: {
+                [Op.lte]: tgl_check_out,
+              },
             },
           ],
         },
       });
-      return availableRooms;
+      if (availableRooms === null || availableRooms.length === 0) {
+        res.json({ message: 'Room Available' });
+      } else {
+        res.json({ message: 'Room Not Available' });
+      }
     } catch (error) {
-      throw new Error('Failed to find available rooms.');
+      console.error(error);
+      res.status(500).json({ message: 'Failed' });
     }
-  }
+}; 
 
 exports.getAllPemesanan = async (request, response) => {
     let pemesanan = await pemesananModel.findAll()
@@ -87,7 +89,7 @@ exports.getPemesanan = async (request, response) => {
     let data = await pemesananModel.findAll(
         {
             include: [
-                'resepsionis',
+                // 'resepsionis',
                 'admin',
                 {
                     model: detailsOfPemesananModel,

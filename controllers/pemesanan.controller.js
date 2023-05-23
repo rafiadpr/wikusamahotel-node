@@ -137,72 +137,81 @@ exports.addPemesanan = async (request, response) => {
     const today = new Date();
     const time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
     const nomorPemesanan = await generateUniqueBookingNumber();
-
+  
     // Tanggal check-in yang dimasukkan oleh pengguna
     const tglCheckIn = new Date(request.body.tgl_check_in);
     tglCheckIn.setHours(12, 0, 0); // Set jam 12:00:00
-
+  
     // Tanggal check-out yang dimasukkan oleh pengguna
     const tglCheckOut = new Date(request.body.tgl_check_out);
     tglCheckOut.setHours(12, 0, 0); // Set jam 12:00:00
-
+  
     try {
-        // Periksa apakah ada pemesanan dengan tanggal check-in yang sama
-        const existingPemesanan = await pemesananModel.findOne({
-            where: {
-                tgl_check_in: tglCheckIn
-            }
-        });
-
-        if (existingPemesanan) {
-            return response.json({
-                success: false,
-                message: "Pemesanan pada tanggal tersebut sudah ada."
-            });
+      // Periksa apakah ada pemesanan dengan tanggal check-in yang sama
+      const existingPemesanan = await pemesananModel.findOne({
+        where: {
+          tgl_check_in: tglCheckIn
         }
-
-        const newPemesanan = {
-            nomor_pemesanan: nomorPemesanan,
-            nama_pemesan: request.body.nama_pemesan,
-            email_pemesan: request.body.email_pemesan,
-            tgl_pemesanan: time,
-            tgl_check_in: tglCheckIn,
-            tgl_check_out: tglCheckOut,
-            nama_tamu: request.body.nama_tamu,
-            jumlah_kamar: request.body.jumlah_kamar,
-            id_tipe_kamar: request.body.id_tipe_kamar,
-            status_pemesanan: 'baru',
-            id_user: request.body.id_user
-        };
-
-        const pemesanan = await pemesananModel.create(newPemesanan);
-        const pemesananID = pemesanan.id;
+      });
+  
+      if (existingPemesanan) {
+        return response.json({
+          success: false,
+          message: "Pemesanan pada tanggal tersebut sudah ada."
+        });
+      }
+  
+      const newPemesanan = {
+        nomor_pemesanan: nomorPemesanan,
+        nama_pemesan: request.body.nama_pemesan,
+        email_pemesan: request.body.email_pemesan,
+        tgl_pemesanan: time,
+        tgl_check_in: tglCheckIn,
+        tgl_check_out: tglCheckOut,
+        nama_tamu: request.body.nama_tamu,
+        jumlah_kamar: request.body.jumlah_kamar,
+        id_tipe_kamar: request.body.id_tipe_kamar,
+        status_pemesanan: 'baru',
+        id_user: request.body.id_user
+      };
+  
+      const pemesanan = await pemesananModel.create(newPemesanan);
+      const pemesananID = pemesanan.id;
+      
+      if (request.body.detail_pemesanan && request.body.detail_pemesanan.length > 0) {
         const detailsOfPemesanan = request.body.detail_pemesanan.map(detail => ({
-            id_kamar: detail.id_kamar,
-            tgl_akses: Date.now(),
-            harga: detail.harga,
-            id_pemesanan: pemesananID
+          id_kamar: detail.id,
+          tgl_akses: Date.now(),
+          harga: detail.harga,
+          id_pemesanan: pemesananID
         }));
-
+  
         const createdDetails = await detailsOfPemesananModel.bulkCreate(detailsOfPemesanan);
+        
         return response.json({
-            success: true,
-            message: `New pemesanan has been inserted with ${createdDetails.length} details.`
+          success: true,
+          message: `New pemesanan has been inserted with details.`
         });
+      } else {
+        return response.json({
+          success: true,
+          message: 'New pemesanan has been inserted without any details.'
+        });
+      }
     } catch (error) {
-        return response.json({
-            success: false,
-            message: error.message
-        });
+      return response.json({
+        success: false,
+        message: error.message
+      });
     }
-};
+  };  
 
 exports.updatePemesanan = async (request, response) => {
     const nomorPemesanan = await generateUniqueBookingNumber()
     let dataPemesanan = {
         nomor_pemesanan: nomorPemesanan,
-        nama_pemesan : request.body.nama_pemesanan,
-        email_pemesan : request.body.email_pemesanan,
+        nama_pemesan : request.body.nama_pemesan,
+        email_pemesan : request.body.email_pemesan,
         tgl_pemesanan : request.body.tgl_pemesanan,
         tgl_check_in : request.body.tgl_check_in,
         tgl_check_out : request.body.tgl_check_out,
@@ -218,6 +227,28 @@ exports.updatePemesanan = async (request, response) => {
         return response.json({
             success: true,
             message: `Data pemesanan has been updated`
+        })
+    })
+    .catch(error => {
+        return response.json({
+            success: false,
+            message: error.message
+        })
+    })
+}
+
+exports.updateDetailPemesanan = async (request, response) => {
+    // const nomorPemesanan = await generateUniqueBookingNumber()
+    let dataDetailPemesanan = {
+        id_kamar: request.body.id_kamar,
+        harga : request.body.harga,
+    }
+    let detailpemesananID = request.params.id
+    detailsOfPemesananModel.update(dataDetailPemesanan, {where: {id:detailpemesananID}})
+    .then(result => {
+        return response.json({
+            success: true,
+            message: `Data Detail pemesanan has been updated`
         })
     })
     .catch(error => {

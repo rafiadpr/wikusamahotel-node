@@ -12,5 +12,6 @@ app.get("/:id", pemesananController.getPemesanan)
 app.post("/", pemesananController.addPemesanan)
 app.post("/find", pemesananController.findPemesanan)
 app.put("/:id", pemesananController.updatePemesanan)
+app.put("/detail/:id", pemesananController.updateDetailPemesanan)
 app.delete("/:id", pemesananController.deletePemesanan)
 module.exports = app;

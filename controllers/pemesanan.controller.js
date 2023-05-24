@@ -60,7 +60,7 @@ exports.getCheck = async (req, res) => {
 }; 
 
 exports.getAllPemesanan = async (request, response) => {
-    let pemesanan = await pemesananModel.findAll()
+    let pemesanan = await pemesananModel.findAll({ raw: true })
     return response.json({
         success: true,
         data: pemesanan,
@@ -85,27 +85,27 @@ exports.getPemesanan = async (request, response) => {
     })
 }
 
-exports.getPemesanan = async (request, response) => {
-    let data = await pemesananModel.findAll(
-        {
-            include: [
-                // 'resepsionis',
-                'admin',
-                {
-                    model: detailsOfPemesananModel,
-                    as: `detail_pemesanan`,
-                    include: ["pemesanan"]
-                }
-            ]
-        }
-    )
+// exports.getPemesanan = async (request, response) => {
+//     let data = await pemesananModel.findAll(
+//         {
+//             include: [
+//                 'resepsionis',
+//                 'admin',
+//                 {
+//                     model: detailsOfPemesananModel,
+//                     as: `detail_pemesanan`,
+//                     include: ["pemesanan"]
+//                 }
+//             ]
+//         }
+//     )
     
-    return response.json({
-        success: true,
-        data: data,
-        message: `all pemesanan have been loaded`
-    })
-}
+//     return response.json({
+//         success: true,
+//         data: data,
+//         message: `all pemesanan have been loaded`
+//     })
+// }
 
 exports.findPemesanan = async (request, response) => {
     let keyword = request.body.keyword
